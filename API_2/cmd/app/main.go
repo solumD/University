@@ -1,0 +1,22 @@
+package main
+
+import (
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"gitlab.ozon.ru/university/api-2/internal/app"
+	"go.uber.org/zap"
+)
+
+func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	if err := app.Run(ctx); err != nil {
+		log := zap.NewExample()
+		log.Error("application stopped", zap.Error(err))
+		os.Exit(1)
+	}
+}
