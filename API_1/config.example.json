@@ -1,0 +1,7 @@
+{
+  "api_key": "",
+  "http_addr": "127.0.0.1:8080",
+  "db_path": "data/api.db",
+  "rate_limit": 60,
+  "log_level": "info"
+}

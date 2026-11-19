@@ -1,0 +1,1163 @@
+openapi: 3.0.3
+info:
+  title: Projects & Tasks API
+  version: 2.0.0
+  description: Лабораторная работа №1. Версии используют общие данные. Все API-запросы требуют X-API-Key.
+    Лимит по умолчанию — 60 запросов в минуту на ключ, общий для обеих версий; ошибки и повторы тоже учитываются.
+    Без корректного ключа применяется лимит по IP. Счётчики хранятся в памяти одного процесса и сбрасываются
+    при перезапуске. /docs и /openapi.yaml доступны без ключа и вне лимита API. Неподдерживаемый метод
+    возвращает 405 с code/message; неизвестный маршрут — 404.
+servers:
+- url: /
+security:
+- ApiKeyAuth: []
+tags:
+- name: v1 / projects
+- name: v1 / tasks
+- name: v2 / projects
+- name: v2 / tasks
+paths:
+  /api/v1/projects:
+    get:
+      tags:
+      - v1 / projects
+      operationId: v1_list_projects
+      summary: 'Список: projects'
+      responses:
+        '200':
+          description: Успешный ответ.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      description: Сортировка по id по возрастанию; фильтры применяются совместно. Повторяющиеся и неизвестные
+        параметры запрещены. В v1 пагинации нет.
+    post:
+      tags:
+      - v1 / projects
+      operationId: v1_create_projects
+      summary: Создать проект
+      responses:
+        '201':
+          description: Ресурс создан.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+            Location:
+              description: Путь к ресурсу в версии запроса.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        description: Один JSON-объект, максимум 64 КиБ. Неизвестные поля запрещены.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInput'
+  /api/v1/projects/{id}:
+    parameters:
+    - $ref: '#/components/parameters/ID'
+    get:
+      tags:
+      - v1 / projects
+      operationId: v1_get_projects
+      summary: Получить проект
+      responses:
+        '200':
+          description: Успешный ответ.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+      - v1 / projects
+      operationId: v1_update_projects
+      summary: Обновить проект
+      responses:
+        '200':
+          description: Успешный ответ.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      requestBody:
+        required: true
+        description: Один JSON-объект, максимум 64 КиБ. Неизвестные поля запрещены.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInput'
+      description: Полная замена изменяемых полей. ID берётся из пути. Отсутствующий ресурс не создаётся.
+    delete:
+      tags:
+      - v1 / projects
+      operationId: v1_delete_projects
+      summary: Удалить проект
+      responses:
+        '204':
+          description: Ресурс удалён, тело отсутствует.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      description: При наличии задач возвращается 409; сначала удалите или перенесите задачи.
+    patch:
+      tags:
+      - v1 / projects
+      operationId: v1_patch_projects
+      summary: Частично обновить проект
+      responses:
+        '200':
+          description: Успешный ответ.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      requestBody:
+        required: true
+        description: Один JSON-объект, максимум 64 КиБ. Неизвестные поля запрещены.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInput'
+      description: Изменяются только переданные поля. Пустой объект, null и неизвестные поля запрещены.
+  /api/v1/tasks:
+    get:
+      tags:
+      - v1 / tasks
+      operationId: v1_list_tasks
+      summary: 'Список: tasks'
+      responses:
+        '200':
+          description: Успешный ответ.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      parameters:
+      - $ref: '#/components/parameters/ProjectID'
+      - $ref: '#/components/parameters/Completed'
+      description: Сортировка по id по возрастанию; фильтры применяются совместно. Повторяющиеся и неизвестные
+        параметры запрещены. В v1 пагинации нет.
+    post:
+      tags:
+      - v1 / tasks
+      operationId: v1_create_tasks
+      summary: Создать задачу
+      responses:
+        '201':
+          description: Ресурс создан.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+            Location:
+              description: Путь к ресурсу в версии запроса.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        description: Один JSON-объект, максимум 64 КиБ. Неизвестные поля запрещены.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+  /api/v1/tasks/{id}:
+    parameters:
+    - $ref: '#/components/parameters/ID'
+    get:
+      tags:
+      - v1 / tasks
+      operationId: v1_get_tasks
+      summary: Получить задачу
+      responses:
+        '200':
+          description: Успешный ответ.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+      - v1 / tasks
+      operationId: v1_update_tasks
+      summary: Обновить задачу
+      responses:
+        '200':
+          description: Успешный ответ.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      requestBody:
+        required: true
+        description: Один JSON-объект, максимум 64 КиБ. Неизвестные поля запрещены.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      description: Полная замена изменяемых полей. ID берётся из пути. Отсутствующий ресурс не создаётся.
+        Можно перенести задачу в другой проект; отсутствие description очищает описание.
+    delete:
+      tags:
+      - v1 / tasks
+      operationId: v1_delete_tasks
+      summary: Удалить задачу
+      responses:
+        '204':
+          description: Ресурс удалён, тело отсутствует.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags:
+      - v1 / tasks
+      operationId: v1_patch_tasks
+      summary: Частично обновить задачу
+      responses:
+        '200':
+          description: Успешный ответ.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      requestBody:
+        required: true
+        description: Один JSON-объект, максимум 64 КиБ. Неизвестные поля запрещены.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskPatch'
+      description: Изменяются только переданные поля. Пустой объект, null и неизвестные поля запрещены.
+  /api/v2/projects:
+    get:
+      tags:
+      - v2 / projects
+      operationId: v2_list_projects
+      summary: 'Список: projects'
+      responses:
+        '200':
+          description: Успешный ответ.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Offset'
+      description: Сортировка по id по возрастанию; фильтры применяются совместно. Повторяющиеся и неизвестные
+        параметры запрещены.
+    post:
+      tags:
+      - v2 / projects
+      operationId: v2_create_projects
+      summary: Создать проект
+      responses:
+        '201':
+          description: Ресурс создан.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+            Location:
+              description: Путь к ресурсу в версии запроса.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        description: Один JSON-объект, максимум 64 КиБ. Неизвестные поля запрещены.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInput'
+  /api/v2/projects/{id}:
+    parameters:
+    - $ref: '#/components/parameters/ID'
+    get:
+      tags:
+      - v2 / projects
+      operationId: v2_get_projects
+      summary: Получить проект
+      responses:
+        '200':
+          description: Успешный ответ.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+      - v2 / projects
+      operationId: v2_update_projects
+      summary: Обновить проект
+      responses:
+        '200':
+          description: Успешный ответ.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      requestBody:
+        required: true
+        description: Один JSON-объект, максимум 64 КиБ. Неизвестные поля запрещены.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInput'
+      description: Полная замена изменяемых полей. ID берётся из пути. Отсутствующий ресурс не создаётся.
+    delete:
+      tags:
+      - v2 / projects
+      operationId: v2_delete_projects
+      summary: Удалить проект
+      responses:
+        '204':
+          description: Ресурс удалён, тело отсутствует.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      description: При наличии задач возвращается 409; сначала удалите или перенесите задачи.
+    patch:
+      tags:
+      - v2 / projects
+      operationId: v2_patch_projects
+      summary: Частично обновить проект
+      responses:
+        '200':
+          description: Успешный ответ.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      requestBody:
+        required: true
+        description: Один JSON-объект, максимум 64 КиБ. Неизвестные поля запрещены.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInput'
+      description: Изменяются только переданные поля. Пустой объект, null и неизвестные поля запрещены.
+  /api/v2/tasks:
+    get:
+      tags:
+      - v2 / tasks
+      operationId: v2_list_tasks
+      summary: 'Список: tasks'
+      responses:
+        '200':
+          description: Успешный ответ.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      parameters:
+      - $ref: '#/components/parameters/ProjectID'
+      - $ref: '#/components/parameters/Completed'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Offset'
+      description: Сортировка по id по возрастанию; фильтры применяются совместно. Повторяющиеся и неизвестные
+        параметры запрещены.
+    post:
+      tags:
+      - v2 / tasks
+      operationId: v2_create_tasks
+      summary: Создать задачу
+      responses:
+        '201':
+          description: Ресурс создан.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+            Location:
+              description: Путь к ресурсу в версии запроса.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        description: Один JSON-объект, максимум 64 КиБ. Неизвестные поля запрещены.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+  /api/v2/tasks/{id}:
+    parameters:
+    - $ref: '#/components/parameters/ID'
+    get:
+      tags:
+      - v2 / tasks
+      operationId: v2_get_tasks
+      summary: Получить задачу
+      responses:
+        '200':
+          description: Успешный ответ.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+      - v2 / tasks
+      operationId: v2_update_tasks
+      summary: Обновить задачу
+      responses:
+        '200':
+          description: Успешный ответ.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      requestBody:
+        required: true
+        description: Один JSON-объект, максимум 64 КиБ. Неизвестные поля запрещены.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      description: Полная замена изменяемых полей. ID берётся из пути. Отсутствующий ресурс не создаётся.
+        Можно перенести задачу в другой проект; отсутствие description очищает описание.
+    delete:
+      tags:
+      - v2 / tasks
+      operationId: v2_delete_tasks
+      summary: Удалить задачу
+      responses:
+        '204':
+          description: Ресурс удалён, тело отсутствует.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags:
+      - v2 / tasks
+      operationId: v2_patch_tasks
+      summary: Частично обновить задачу
+      responses:
+        '200':
+          description: Успешный ответ.
+          headers:
+            X-Limit-Remaining:
+              description: Оставшиеся запросы в минутном окне.
+              schema:
+                type: integer
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      requestBody:
+        required: true
+        description: Один JSON-объект, максимум 64 КиБ. Неизвестные поля запрещены.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskPatch'
+      description: Изменяются только переданные поля. Пустой объект, null и неизвестные поля запрещены.
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  parameters:
+    ID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: 'Ключ повторного POST: передавайте то же значение при повторе запроса.'
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: ^[!-~]+$
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    Offset:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    ProjectID:
+      name: project_id
+      in: query
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+      description: Фильтр по проекту; для отсутствующего проекта список пуст.
+    Completed:
+      name: completed
+      in: query
+      schema:
+        type: boolean
+      description: Только true или false.
+  responses:
+    BadRequest:
+      description: Неверный JSON, поля, параметры или Idempotency-Key.
+      headers:
+        X-Limit-Remaining:
+          description: Оставшиеся запросы в минутном окне.
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Отсутствует или неверен X-API-Key.
+      headers:
+        X-Limit-Remaining:
+          description: Оставшиеся запросы в минутном окне.
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Ресурс или связанный проект не найден.
+      headers:
+        X-Limit-Remaining:
+          description: Оставшиеся запросы в минутном окне.
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Проект содержит задачи или ключ идемпотентности использован с другими данными.
+      headers:
+        X-Limit-Remaining:
+          description: Оставшиеся запросы в минутном окне.
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Внутренняя ошибка сервера.
+      headers:
+        X-Limit-Remaining:
+          description: Оставшиеся запросы в минутном окне.
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooManyRequests:
+      description: Лимит запросов исчерпан.
+      headers:
+        X-Limit-Remaining:
+          description: Оставшиеся запросы в минутном окне.
+          schema:
+            type: integer
+            minimum: 0
+        Retry-After:
+          description: Число секунд до нового окна.
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Project:
+      type: object
+      required:
+      - id
+      - name
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Пробелы по краям удаляются перед проверкой длины.
+    Task:
+      type: object
+      required:
+      - id
+      - project_id
+      - title
+      - completed
+      - description
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        project_id:
+          type: integer
+          format: int64
+          minimum: 1
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Пробелы по краям удаляются перед проверкой длины.
+        completed:
+          type: boolean
+        description:
+          type: string
+          maxLength: 2000
+    ProjectInput:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Пробелы по краям удаляются перед проверкой длины.
+      example:
+        name: Лабораторная работа
+    TaskCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - project_id
+      - title
+      properties:
+        project_id:
+          type: integer
+          format: int64
+          minimum: 1
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Пробелы по краям удаляются перед проверкой длины.
+        completed:
+          type: boolean
+          nullable: true
+          default: false
+          description: При POST отсутствие или null означает false.
+        description:
+          type: string
+          nullable: true
+          maxLength: 2000
+          default: ''
+          description: 'Аддитивное поле: отсутствие или null означает пустую строку, при PUT очищает описание.'
+      example:
+        project_id: 1
+        title: Подготовить документацию
+    TaskUpdate:
+      type: object
+      additionalProperties: false
+      required:
+      - project_id
+      - title
+      - completed
+      properties:
+        project_id:
+          type: integer
+          format: int64
+          minimum: 1
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Пробелы по краям удаляются перед проверкой длины.
+        completed:
+          type: boolean
+        description:
+          type: string
+          nullable: true
+          maxLength: 2000
+          default: ''
+          description: 'Аддитивное поле: отсутствие или null означает пустую строку, при PUT очищает описание.'
+      example:
+        project_id: 1
+        title: Подготовить документацию
+        completed: true
+        description: Описать API
+    Error:
+      type: object
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      example:
+        code: project_not_empty
+        message: project contains tasks
+    ProjectPage:
+      type: object
+      required:
+      - items
+      - total
+      - limit
+      - offset
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Project'
+        total:
+          type: integer
+          minimum: 0
+          description: Количество после фильтрации, до пагинации.
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        offset:
+          type: integer
+          minimum: 0
+    TaskPage:
+      type: object
+      required:
+      - items
+      - total
+      - limit
+      - offset
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        total:
+          type: integer
+          minimum: 0
+          description: Количество после фильтрации, до пагинации.
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        offset:
+          type: integer
+          minimum: 0
+    TaskPatch:
+      type: object
+      additionalProperties: false
+      properties:
+        project_id:
+          type: integer
+          format: int64
+          minimum: 1
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Пробелы по краям удаляются перед проверкой длины.
+        completed:
+          type: boolean
+        description:
+          type: string
+          maxLength: 2000
+          description: Пустая строка очищает описание.
+      example:
+        completed: true
+      minProperties: 1
