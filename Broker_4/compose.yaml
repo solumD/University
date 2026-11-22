@@ -1,0 +1,20 @@
+name: university-broker4
+services:
+  rabbitmq:
+    image: rabbitmq:4-management
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${BROKER_USER:?run make broker-up}
+      RABBITMQ_DEFAULT_PASS: ${BROKER_PASSWORD:?run make broker-up}
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "gosu", "rabbitmq", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 10s
+      timeout: 20s
+      retries: 20
+volumes:
+  rabbitmq-data:

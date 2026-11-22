@@ -1,0 +1,7 @@
+{
+  "rabbitmq_url": "amqp://<user>:<password>@127.0.0.1:5672/",
+  "api_key": "",
+  "db_path": "data/broker.db",
+  "rate_limit": 60,
+  "log_level": "info"
+}
