@@ -1,0 +1,4 @@
+/bin/
+/API/
+/.venv/
+.DS_Store
